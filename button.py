@@ -20,7 +20,7 @@ if __name__ == "__main__":
     broker_port = 1883
 
     # topic for bpm values
-    topic = "/band/button/pressed"
+    topic = "/band/data/button"
 
     client = setup_mqtt_connection(broker_adress, broker_port)
 

@@ -2,19 +2,50 @@ import pygame
 import time
 import paho.mqtt.client as mqtt
 import signal
+import socket
 import json
 import threading
 import os
 
 MQTT_TOPIC = "/band/sound"
-MQTT_BROKER = "localhost"
+MQTT_BROKER = None
 MQTT_PORT = 1883
+connected = False
 
 def signal_handler(sig, frame):
     print("Program je prekinut")
     exit()
 
 signal.signal(signal.SIGINT, signal_handler)
+
+def listen_for_notify():
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.bind(("239.255.255.250", 150))
+
+    while connected == False:
+        
+        data, addr = sock.recvfrom(1024)
+        message = data.decode()
+
+
+        try:
+            message_data = json.loads(message)
+
+            if 'alive' in message_data:
+
+                broker_ip = message_data['ip']
+                client = start_mqtt_subscriber(broker_ip)
+                connected = True
+                print("Connect request sent to broker")
+                return client
+
+        except json.JSONDecodeError:
+            print("Json Decoding error")
+
+
+        
 
 def func():
     time_to_play = 5
@@ -55,18 +86,19 @@ def fail(client, userdata, rc):
     print("CONNECTION FAILED")
 
 
-def start_mqtt_subscriber():
+def start_mqtt_subscriber(ip):
     client = mqtt.Client()
     client.on_message = on_message
     client.on_connect = on_connect
     client.on_connect_fail = fail
     client.on_disconnect = fail
 
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.connect(ip, MQTT_PORT, 60)
     client.loop_start()
     return client
 
 if __name__ == "__main__":
 
-    mqtt_client = start_mqtt_subscriber()
+    mqtt_client = listen_for_notify()
+    
     signal.pause()
