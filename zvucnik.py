@@ -10,7 +10,7 @@ import os
 MQTT_TOPIC = "/band/sound"
 MQTT_BROKER = None
 MQTT_PORT = 1883
-connected = False
+
 
 def signal_handler(sig, frame):
     print("Program je prekinut")
@@ -18,16 +18,29 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
+def init_sock():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("239.255.255.250", 1900))
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton("239.255.255.250") + socket.inet_aton("0.0.0.0"))
+    return sock, True
+
 def listen_for_notify():
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    sock.bind(("239.255.255.250", 150))
+    connected = False
+    init_succ = False
 
-    while connected == False:
+    while not init_succ:
+        try:
+            sock, init_succ = init_sock()
+        except OSError:
+            time.sleep(1)    
+   
+
+    while not connected:
         
         data, addr = sock.recvfrom(1024)
         message = data.decode()
+        print(message)
 
 
         try:
@@ -67,6 +80,8 @@ def func():
         time.sleep(pauza)
 
     pygame.mixer.music.stop()
+    pygame.mixer.quit()
+    pygame.quit()
 
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker")

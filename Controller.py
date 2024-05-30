@@ -8,13 +8,23 @@ import socket
 from threading import Thread
 import subprocess
 
+BPsys_low = 90
+BPsys_hi = 140
+BPdia_hi = 90
+
+BPMhi = 100
+BPMlow = 60
+
+Temphi = 38
+Templow = 35
+
 def start_server():
 
     controller.server_alive = True
     while controller.server_alive:
         try:
             controller.ssdp_notify()
-            time.sleep(15) #notify svakih 15 sekundi
+            time.sleep(5) #notify svakih 15 sekundi
         except KeyboardInterrupt:
             print("Program was shut down with keyboard interrupt")
             exit()
@@ -38,10 +48,10 @@ class Controller():
         self.name = "Controller"
         self.server_alive = False
         self.connected = False
-        self.broadcast_port = 50000
+        self.broadcast_port = 1900
         self.mqtt_port = 1883
         self.receive_port = 50001
-        self.ip = 'localhost'
+        self.ip = socket.gethostbyname('localhost')
         self.client = None
         self.MQTT_TOPICS = [("/band/data/temperature",0), ("/band/data/BPM",0), ("/band/data/blood_pressure",0), ("/band/data/button",0)]
 
@@ -58,6 +68,8 @@ class Controller():
         self.BPM = None
         self.button = None
         self.pressure = None
+        self.pressure_sys = None
+        self.pressure_dia = None
         self.temperature = None
 
         signal.signal(signal.SIGINT, signal_handler)
@@ -81,6 +93,9 @@ class Controller():
         elif category == "blood_pressure":
             self.pressure_message = message
             self.pressure = message["value"]
+            delovi = self.pressure.split("/")
+            self.pressure_dia = delovi[1]
+            self.pressure_sys = delovi[0]
         elif category == "button":
             self.button_message = message
             self.button = message["value"]
@@ -95,21 +110,24 @@ class Controller():
     def brain(self):
 
         #definisati logiku kontrolera
-        print("brain")
+        while True:
 
-            
+            if self.temperature > Temphi or self.temperature < Templow:
 
+                message = TopicMessage ({
+            'type':"publish",
+            'name':"Controller",
+            'ip':self.ip,
+            'topic':"/band/vibration",
+            'value_type': "str",
+            'value':"lh_bodytemp"
+        })
 
+                self.client.publish("/band/vibration",message.toJSON())
 
+                print(f"Sent a command to the vibration motor, lh_bodytemp")
 
-
-
-
-
-
-
-
-
+        
 
 
 
@@ -132,9 +150,7 @@ class Controller():
         family=socket.AF_INET,
         type=socket.SOCK_DGRAM
     )
-        sock.setsockopt(
-            socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.bind((ip, port))
+        sock.setsockopt(socket.IPPROTO_IP,socket.IP_MULTICAST_TTL, 2)
 
         return sock
     
@@ -156,7 +172,8 @@ class Controller():
 
         #Funkcija koja ce svakih 20 sekundi da se oglasi putem multicast kanala kako bi senzori i aktuatori znali na koju IP adresu da se konektuju
         data = json.dumps(self.alive).encode()
-        sent = self.socket_broadcast.sendto(data, ("239.255.255.250",150))
+        sent = self.socket_broadcast.sendto(data, ("239.255.255.250",self.broadcast_port))
+        print(data)
 
 if __name__ == "__main__":
 

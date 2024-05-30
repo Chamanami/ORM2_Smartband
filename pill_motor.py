@@ -1,11 +1,15 @@
 import signal
 import json
+import time
 import paho.mqtt.client as mqtt
+import socket
+import re
 import threading
 
 MQTT_TOPIC = "/band/meds_dispenser"
-MQTT_BROKER = "localhost"
+MQTT_BROKER = None
 MQTT_PORT = 1883
+
 
 open = False
 
@@ -15,6 +19,47 @@ def signal_handler(sig, frame):
     exit()
 
 signal.signal(signal.SIGINT, signal_handler)
+
+def init_sock():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("239.255.255.250", 1900))
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton("239.255.255.250") + socket.inet_aton("0.0.0.0"))
+    return sock, True
+
+def listen_for_notify():
+
+    connected = False
+
+    init_succ = False
+
+    while not init_succ:
+        try:
+            sock, init_succ = init_sock()
+        except OSError:
+            time.sleep(1)
+    
+
+    while not connected:
+        
+        data, addr = sock.recvfrom(1024)
+        message = data.decode()
+        print(message)
+
+        try:
+            message_data = json.loads(message)
+
+            alive = message_data['alive']
+
+            if alive:
+
+                broker_ip = message_data['ip']
+                client = start_mqtt_subscriber(broker_ip)
+                connected = True
+                print("Connect request sent to broker")
+                return client
+
+        except json.JSONDecodeError:
+            print("Json Decoding error")
 
 def func(open):
     if open:
@@ -43,18 +88,18 @@ def fail(client, userdata, rc):
     print("CONNECTION FAILED")
 
 
-def start_mqtt_subscriber():
+def start_mqtt_subscriber(ip):
     client = mqtt.Client()
     client.on_message = on_message
     client.on_connect = on_connect
     client.on_connect_fail = fail
     client.on_disconnect = fail
 
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.connect(ip, MQTT_PORT, 60)
     client.loop_start()
     return client
 
 if __name__ == "__main__":
 
-    mqtt_client = start_mqtt_subscriber()
+    mqtt_client = listen_for_notify()
     signal.pause()
