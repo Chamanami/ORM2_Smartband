@@ -77,13 +77,13 @@ class Controller():
             self.temperature = message["value"]
         elif category == "BPM":
             self.bpm_message = message
-            self.temperature = message["value"]
+            self.BPM = message["value"]
         elif category == "blood_pressure":
             self.pressure_message = message
-            self.temperature = message["value"]
+            self.pressure = message["value"]
         elif category == "button":
             self.button_message = message
-            self.temperature = message["value"]
+            self.button = message["value"]
         else:
             print("Unknown data received")
 
@@ -96,6 +96,21 @@ class Controller():
 
         #definisati logiku kontrolera
         print("brain")
+
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     def start_mqtt_client(self):
