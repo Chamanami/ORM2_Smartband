@@ -1,0 +1,23 @@
+Narukvica: 
+	BROKER
+	
+	prima poruke sa senzora
+	slaje ih na aktuatore
+	
+Generic class Senzor:
+	
+	slanje na brokera
+
+Specijalizovane senzor klase:
+	
+	formira sebe kao uradjaj
+	
+	spec input
+	
+
+Klasa Aktuator:
+	
+	primanje poruka sa brokera
+	
+spec akt:
+	izvrsavanje komande
