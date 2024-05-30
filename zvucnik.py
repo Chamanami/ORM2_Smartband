@@ -3,6 +3,8 @@ import time
 import paho.mqtt.client as mqtt
 import signal
 import json
+import threading
+import os
 
 MQTT_TOPIC = "/band/sound"
 MQTT_BROKER = "localhost"
@@ -21,7 +23,9 @@ def func():
     pygame.init()
     pygame.mixer.init()
 
-    pygame.mixer.music.load('pomoc.mp3')
+    sound_file = os.path.join("Sounds", "pomoc.mp3")
+
+    pygame.mixer.music.load(sound_file)
 
     end_time = time.time() + time_to_play
 

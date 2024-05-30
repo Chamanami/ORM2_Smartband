@@ -2,6 +2,8 @@ import pygame
 import time
 import signal
 import json
+import os
+import threading
 import paho.mqtt.client as mqtt
 
 MQTT_TOPIC = "/band/vibration"
@@ -21,7 +23,9 @@ haptic_play_duration = 5
 pygame.init()
 pygame.mixer.init()
 
-pygame.mixer.music.load('vibrations.mp3')
+sound_file = os.path.join("Sounds", "vibrations.mp3")
+
+pygame.mixer.music.load(sound_file)
 pygame.mixer.music.set_volume(0.7)
 
 def pulse():
