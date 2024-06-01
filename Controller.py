@@ -110,24 +110,26 @@ class Controller():
     def brain(self):
 
         #definisati logiku kontrolera
-        while True:
+        try:
+            while True:
 
-            if self.temperature > Temphi or self.temperature < Templow:
+                if self.temperature > Temphi or self.temperature < Templow:
 
-                message = TopicMessage ({
-            'type':"publish",
-            'name':"Controller",
-            'ip':self.ip,
-            'topic':"/band/vibration",
-            'value_type': "str",
-            'value':"lh_bodytemp"
-        })
+                    message = TopicMessage ({
+                'type':"publish",
+                'name':"Controller",
+                'ip':self.ip,
+                'topic':"/band/vibration",
+                'value_type': "str",
+                'value':"lh_bodytemp"
+                })
 
-                self.client.publish("/band/vibration",message.toJSON())
+                    self.client.publish("/band/vibration",message.toJSON())
 
-                print(f"Sent a command to the vibration motor, lh_bodytemp")
+                    print(f"Sent a command to the vibration motor, lh_bodytemp")
 
-        
+        except TypeError :
+            print("nodata")
 
 
 

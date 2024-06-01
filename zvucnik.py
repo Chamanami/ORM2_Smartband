@@ -1,11 +1,11 @@
-import pygame
 import time
 import paho.mqtt.client as mqtt
 import signal
 import socket
 import json
-import threading
 import os
+import sounddevice as sd
+import soundfile as sf
 
 MQTT_TOPIC = "/band/sound"
 MQTT_BROKER = None
@@ -58,30 +58,29 @@ def listen_for_notify():
             print("Json Decoding error")
 
 
+def play_audio_with_no_limits(filename):
+
+    data, fs = sf.read(filename)
+
+    sd.play(data, fs)
+    
+    sd.wait()
         
+time_to_play = 5
+pause = 0.75
+audio_file = "Sounds/pomoc.mp3"
 
 def func():
-    time_to_play = 5
-    pauza = 0.75
-
-    pygame.init()
-    pygame.mixer.init()
-
-    sound_file = os.path.join("Sounds", "pomoc.mp3")
-
-    pygame.mixer.music.load(sound_file)
 
     end_time = time.time() + time_to_play
 
     # Pustite zvuk i dodajte pauzu između repeticija
     while time.time() < end_time:
         
-        pygame.mixer.music.play()
-        time.sleep(pauza)
+        play_audio_with_no_limits(audio_file)
+        time.sleep(pause)
 
-    pygame.mixer.music.stop()
-    pygame.mixer.quit()
-    pygame.quit()
+
 
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT broker")
@@ -115,5 +114,6 @@ def start_mqtt_subscriber(ip):
 if __name__ == "__main__":
 
     mqtt_client = listen_for_notify()
-    
+
     signal.pause()
+    

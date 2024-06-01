@@ -1,12 +1,10 @@
-import pygame
-from pygame.locals import *
 import time
 import signal
 import json
-import os
 import socket
-import threading
 import paho.mqtt.client as mqtt
+import soundfile as sf
+import sounddevice as sd
 
 MQTT_TOPIC = "/band/vibration"
 MQTT_BROKER = None
@@ -25,7 +23,17 @@ def init_sock():
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton("239.255.255.250") + socket.inet_aton("0.0.0.0"))
     return sock, True
     
+def play_audio_with_limits(filename, start_seconds, duration_seconds):
+   
+    data, fs = sf.read(filename)
 
+    start_sample = int(start_seconds * fs)
+    duration_samples = int(duration_seconds * fs)
+
+    data_to_play = data[start_sample:start_sample + duration_samples]
+
+    sd.play(data_to_play, fs)
+    sd.wait()
 
 def listen_for_notify():
 
@@ -62,23 +70,13 @@ def listen_for_notify():
 pauza = 1
 puls = 0.5
 haptic_play_duration = 5
-def init():
-    pygame.init()
-    pygame.mixer.init()
-
-    sound_file = os.path.join("Sounds", "vibrations.mp3")
-
-    pygame.mixer.music.load(sound_file)
-    pygame.mixer.music.set_volume(0.7)
+audio_file = "Sounds/vibrations.mp3"
+start_time = 0.5
+duration = 1
 
 def pulse():
-    init()
-    pygame.mixer.music.play(start = 0.5)
-    time.sleep(pauza)
-
-    pygame.mixer.music.stop()
-    pygame.mixer.quit()
-    pygame.quit()
+    
+    play_audio_with_limits(audio_file, start_time, duration)
 
 
 def short_pause():
@@ -89,14 +87,8 @@ def es_pause():
     time.sleep(0.25)
 
 def short_pulse():
-    init()
-    pygame.mixer.music.play(start = 0.5)
-    time.sleep(puls)
 
-   # pygame.mixer.music.fadeout(2000)
-    pygame.mixer.music.stop()
-    pygame.mixer.quit()
-    pygame.quit()
+    play_audio_with_limits(audio_file, start_time, puls)
 
 def lh_bpm():
     
@@ -166,5 +158,7 @@ if __name__ == "__main__":
 
     mqtt_client = listen_for_notify()
     signal.pause()
+    
+    
         
         
