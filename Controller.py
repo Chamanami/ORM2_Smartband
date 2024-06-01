@@ -7,6 +7,53 @@ from messages import TopicMessage
 import socket
 from threading import Thread
 import subprocess
+import tkinter as tk
+from tkinter import ttk
+import threading
+
+class SmartBraceletGUI:
+    def __init__(self, root, controller):
+        self.root = root
+        self.controller = controller
+        self.root.title("Smart Bracelet Controller")
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.frame = ttk.Frame(self.root, padding="10")
+        self.frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        headers = ["Sensor", "Value"]
+        for col, header in enumerate(headers):
+            lbl = ttk.Label(self.frame, text=header, font=("Helvetica", 12, "bold"))
+            lbl.grid(row=0, column=col, padx=5, pady=5)
+        
+        self.sensor_labels = {}
+        self.value_labels = {}
+
+        sensors = ["Temperature", "BPM", "Blood Pressure", "Button"]
+        for row, sensor in enumerate(sensors, start=1):
+            self.sensor_labels[sensor] = ttk.Label(self.frame, text=sensor)
+            self.sensor_labels[sensor].grid(row=row, column=0, padx=5, pady=5)
+            
+            self.value_labels[sensor] = ttk.Label(self.frame, text="N/A")
+            self.value_labels[sensor].grid(row=row, column=1, padx=5, pady=5)
+        
+
+    def update_sensor_data(self):
+        self.value_labels["Temperature"].config(text=self.controller.temperature or "N/A")
+        self.value_labels["BPM"].config(text=self.controller.BPM or "N/A")
+        self.value_labels["Blood Pressure"].config(text=f"{self.controller.pressure_sys}/{self.controller.pressure_dia}" if self.controller.pressure_sys and self.controller.pressure_dia else "N/A")
+        self.value_labels["Button"].config(text=self.controller.button)
+
+    def start_auto_update(self, interval=600):
+        self.update_sensor_data()
+        self.root.after(interval, self.start_auto_update, interval)
+
+def start_gui(controller):
+    root = tk.Tk()
+    app = SmartBraceletGUI(root, controller)
+    app.start_auto_update()
+    root.mainloop()
 
 BPsys_low = 90
 BPsys_hi = 140
@@ -40,7 +87,46 @@ def start_mosquitto_broker():
 
 def signal_handler(sig, frame):
         print("Program je prekinut")
+        controller.server_alive = False
+        global isRunning
+        isRunning = False
         exit()
+
+
+def real_time_clock_model():
+    global TIME_TRIGGER
+
+    try:
+        minutes_per_hour = 60
+        hours_per_day = 24
+
+        hours = 00
+        minutes = 00
+        global isRunning
+
+        while isRunning:
+
+            print(f"{hours:02}:{minutes:02}")
+
+            if minutes == 0:
+                TIME_TRIGGER = True
+            else:
+                TIME_TRIGGER = False
+
+            time.sleep(1)
+            minutes +=1
+
+            if minutes == minutes_per_hour:
+                hours +=1
+                minutes = 0
+
+            if hours == hours_per_day:
+                hours = 0
+                minutes = 0
+    except KeyboardInterrupt:
+        print("Program was shut down with keyboard interrupt")
+        controller.server_alive = False
+        isRunning = False
 
 class Controller():
 
@@ -108,11 +194,11 @@ class Controller():
 
 
     def brain(self):
+        global TIME_TRIGGER
 
-        #definisati logiku kontrolera
         try:
             while True:
-
+                #temperatura van opsega
                 if self.temperature > Temphi or self.temperature < Templow:
 
                     message = TopicMessage ({
@@ -128,8 +214,92 @@ class Controller():
 
                     print(f"Sent a command to the vibration motor, lh_bodytemp")
 
+                #slucaj pritiskanja dugmeta
+                if self.button:
+                    message = TopicMessage({
+                        'type':"publish",
+                        'name':"Controller",
+                        'ip' : self.ip,
+                        'topic':"/band/meds_dispenser",
+                        'value_type': "str", #TODO promeniti u slucaju drugacije logike
+                        'value': "True"
+                    })
+
+                    self.client.publish("/band/meds_dispenser",message.toJSON())
+                    print(f"Sent a command to the meds dispensor, True")
+
+                #Totalni kolaps
+                if self.BPM < BPMlow and (self.pressure_sys >= BPsys_hi or self.pressure_sys <= BPsys_low or self.pressure_dia >= BPdia_hi):
+                    message = TopicMessage({
+                        'type':"publish",
+                        'name':"Controller",
+                        'ip':self.ip,
+                        'topic':"/band/sound",
+                        'value_type':"str",
+                        'value': "pomoc"
+                    })
+
+                    self.client.publish("/band/sound",message.toJSON())
+                    print(f"Sent a command to the speaker, pomoc")
+
+                #Otkucaiji srca
+                if self.BPM > BPMhi or self.BPM < BPMlow:
+
+                    message = TopicMessage ({
+                'type':"publish",
+                'name':"Controller",
+                'ip':self.ip,
+                'topic':"/band/vibration",
+                'value_type': "str",
+                'value':"lh_bpm"
+                })
+
+                    self.client.publish("/band/vibration",message.toJSON())
+
+                    print(f"Sent a command to the vibration motor, lh_bpm")
+
+                #pritisak
+                if self.pressure_sys >= BPsys_hi or self.pressure_sys <= BPsys_low or self.pressure_dia >= BPdia_hi:
+
+                    message = TopicMessage ({
+                'type':"publish",
+                'name':"Controller",
+                'ip':self.ip,
+                'topic':"/band/vibration",
+                'value_type': "str",
+                'value':"lh_bpressure"
+                })
+
+                    self.client.publish("/band/vibration",message.toJSON())
+
+                    print(f"Sent a command to the vibration motor, lh_bpressure")
+
+
+                #slanje komande tajmeru:
+                
+                if TIME_TRIGGER:
+
+                    message = TopicMessage ({
+                'type':"publish",
+                'name':"Controller",
+                'ip':self.ip,
+                'topic':"/band/sound",
+                'value_type': "str",
+                'value':"terapija"
+                })
+
+                    self.client.publish("/band/vibration",message.toJSON())
+
+                    print(f"Sent a command to the speaker, terapija")
+
+                
+
+
         except TypeError :
             print("nodata")
+
+         #definisati logiku kontrolera
+        print("brain")
 
 
 
@@ -186,4 +356,7 @@ if __name__ == "__main__":
     controller.threads.append(Thread(target=start_server, args=(), daemon=True))
     controller.threads[-1].start() #Pokretanje servera i oglasavanje na kojoj adresi je broker
     time.sleep(5)
-    controller.start()
+    controller.threads.append(threading.Thread(target=controller.start, args=(), daemon=True))
+    controller.threads[-1].start()
+
+    start_gui(controller)

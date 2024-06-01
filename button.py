@@ -46,14 +46,30 @@ def setup_mqtt_connection(broker_adress,broker_port):
     client.connect(broker_adress,broker_port)
     return client
 
+topic = "/band/data/button"
+
 def simulate_button_pressed():
     user_input = input("Press Enter button")
     return user_input == ""
 
+def simulate_button_depressed():
+
+    data = False
+
+    message = TopicMessage({
+        'type': "publish",
+        'name': "Button",
+        'ip': socket.gethostname(),
+        'topic': topic,
+        'value': data
+    })
+
+    client.publish(topic, message.toJSON())
+    print("Button depressed!")
 
 
 def publish_data(client):
-    topic = "/band/data/button"
+    
 
     while True:
         if simulate_button_pressed():
@@ -69,6 +85,11 @@ def publish_data(client):
 
             client.publish(topic, message.toJSON())
             print("Button pressed!")
+            time.sleep(0.7)
+
+            simulate_button_depressed() #sad button :'(
+
+        else:
             break
 
 
