@@ -85,7 +85,7 @@ def publish_data(client):
 
             client.publish(topic, message.toJSON())
             print("Button pressed!")
-            time.sleep(0.7)
+            time.sleep(3)
 
             simulate_button_depressed() #sad button :'(
 

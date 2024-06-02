@@ -75,7 +75,7 @@ def publish_data(client):
     sensor = simulate_heartbeat()
     topic = "/band/data/BPM"
 
-    for _ in range(20):  # Simulate 20 readings
+    while True:  # Simulate 20 readings
         bpm = next(sensor)
 
         message = TopicMessage({

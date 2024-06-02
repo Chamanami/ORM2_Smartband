@@ -66,7 +66,7 @@ def publish_data(client):
     sensor = simulate_pressure()
     topic = "/band/data/blood_pressure"
 
-    for _ in range(20):
+    while True:
         systolic, diastolic = next(sensor)
         pressure_string = "" + str(systolic) + "/" + str(diastolic)
 

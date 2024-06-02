@@ -37,6 +37,10 @@ class SmartBraceletGUI:
             
             self.value_labels[sensor] = ttk.Label(self.frame, text="N/A")
             self.value_labels[sensor].grid(row=row, column=1, padx=5, pady=5)
+
+        self.time_label = ttk.Label(self.frame, text="00:00", font=("Helvetica", 12, "bold"))
+        self.time_label.grid(row=len(sensors) + 1, column=0, columnspan=2, padx=5, pady=5)
+
         
 
     def update_sensor_data(self):
@@ -47,13 +51,22 @@ class SmartBraceletGUI:
 
     def start_auto_update(self, interval=600):
         self.update_sensor_data()
+        self.update_time()
         self.root.after(interval, self.start_auto_update, interval)
+    
+    def update_time(self):
+        self.time_label.config(text=current_time)
 
 def start_gui(controller):
     root = tk.Tk()
     app = SmartBraceletGUI(root, controller)
     app.start_auto_update()
     root.mainloop()
+
+TIME_TRIGGER = False
+isRunning = True
+
+current_time = "00:00"
 
 BPsys_low = 90
 BPsys_hi = 140
@@ -95,7 +108,7 @@ def signal_handler(sig, frame):
 
 def real_time_clock_model():
     global TIME_TRIGGER
-
+    global current_time
     try:
         minutes_per_hour = 60
         hours_per_day = 24
@@ -106,7 +119,7 @@ def real_time_clock_model():
 
         while isRunning:
 
-            print(f"{hours:02}:{minutes:02}")
+            current_time = f"{hours:02}:{minutes:02}"
 
             if minutes == 0:
                 TIME_TRIGGER = True
@@ -196,8 +209,9 @@ class Controller():
     def brain(self):
         global TIME_TRIGGER
 
-        try:
-            while True:
+        
+        while True:
+            try:
                 #temperatura van opsega
                 if self.temperature > Temphi or self.temperature < Templow:
 
@@ -226,6 +240,7 @@ class Controller():
                     })
 
                     self.client.publish("/band/meds_dispenser",message.toJSON())
+
                     print(f"Sent a command to the meds dispensor, True")
 
                 #Totalni kolaps
@@ -295,11 +310,11 @@ class Controller():
                 
 
 
-        except TypeError :
-            print("nodata")
+            except TypeError :
+                print("nodata")
 
-         #definisati logiku kontrolera
-        print("brain")
+            #definisati logiku kontrolera
+            print("brain")
 
 
 
@@ -352,6 +367,8 @@ if __name__ == "__main__":
     controller = Controller()
     controller.threads.append(Thread(target=start_mosquitto_broker, args=(), daemon=False))
     controller.threads[-1].start() #Pokretanje brokera
+    controller.threads.append(Thread(target=real_time_clock_model, args=(), daemon=False))
+    controller.threads[-1].start()
     time.sleep(2)
     controller.threads.append(Thread(target=start_server, args=(), daemon=True))
     controller.threads[-1].start() #Pokretanje servera i oglasavanje na kojoj adresi je broker

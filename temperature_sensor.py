@@ -63,7 +63,7 @@ def publish_data(client):
     topic = "/band/data/temperature"
 
     sensor = simulate_temperature()
-    for _ in range(20):
+    while True:
         temperature = next(sensor)
 
         message = TopicMessage({
