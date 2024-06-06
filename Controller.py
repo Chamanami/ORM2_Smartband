@@ -30,7 +30,7 @@ class SmartBraceletGUI:
         self.sensor_labels = {}
         self.value_labels = {}
 
-        sensors = ["Temperature", "BPM", "Blood Pressure", "Button"]
+        sensors = ["Temperature", "BPM", "Blood Pressure", "Button", "Pill Bracket"]
         for row, sensor in enumerate(sensors, start=1):
             self.sensor_labels[sensor] = ttk.Label(self.frame, text=sensor)
             self.sensor_labels[sensor].grid(row=row, column=0, padx=5, pady=5)
@@ -44,10 +44,37 @@ class SmartBraceletGUI:
         
 
     def update_sensor_data(self):
-        self.value_labels["Temperature"].config(text=self.controller.temperature or "N/A")
-        self.value_labels["BPM"].config(text=self.controller.BPM or "N/A")
-        self.value_labels["Blood Pressure"].config(text=f"{self.controller.pressure_sys}/{self.controller.pressure_dia}" if self.controller.pressure_sys and self.controller.pressure_dia else "N/A")
-        self.value_labels["Button"].config(text=self.controller.button)
+
+        if self.controller.temperature == None:
+            temperature_text = "N/A"
+        else:
+            temperature_text = self.controller.temperature
+        self.value_labels["Temperature"].config(text=temperature_text)
+
+        if self.controller.BPM == None:
+            bpm_text = "N/A"
+        else:
+            bpm_text = self.controller.BPM
+        self.value_labels["BPM"].config(text=bpm_text)
+
+        if self.controller.pressure == None:
+            pressure_text = "N/A"
+        else:
+            pressure_text = f"{self.controller.pressure_sys}/{self.controller.pressure_dia}"
+        self.value_labels["Blood Pressure"].config(text=pressure_text)
+
+        if self.controller.button == None:
+            button_text = "N/A"
+        else:
+            button_text = self.controller.button
+        self.value_labels["Button"].config(text=button_text)
+
+
+        if self.controller.button:
+            bracket_text = "Open"
+        else:
+            bracket_text = "Closed"
+        self.value_labels["Pill Bracket"].config(text=bracket_text)
 
     def start_auto_update(self, interval=600):
         self.update_sensor_data()
@@ -311,10 +338,9 @@ class Controller():
 
 
             except TypeError :
-                print("nodata")
+                continue
 
-            #definisati logiku kontrolera
-            print("brain")
+            time.sleep(0.75)
 
 
 

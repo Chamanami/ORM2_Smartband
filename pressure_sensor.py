@@ -48,7 +48,7 @@ def setup_mqtt_connection(broker_adress,broker_port):
 
 def simulate_pressure(systolic_range=(90,120), diastolic_range=(60,80),
                      spike_range_systolic=(140,180), spike_range_diastolic=(90,110),
-                    spike_probability=0.05,interval=1):
+                    spike_probability=0.01,interval=1):
 
     while True:
         if random.random() < spike_probability:

@@ -52,7 +52,7 @@ def listen_for_notify():
 
 
 
-def simulate_heartbeat(base_range=(60,100), spike_range=(120,200),spike_probability = 0.3, interval=1):
+def simulate_heartbeat(base_range=(60,100), spike_range=(120,200),spike_probability = 0.05, interval=1):
 
     while True:
         if random.random() < spike_probability: #ako je float generisan random random manji od verov spajka, spajk se desava

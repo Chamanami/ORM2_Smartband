@@ -68,18 +68,27 @@ def play_audio_with_no_limits(filename):
         
 time_to_play = 5
 pause = 0.75
-audio_file = "Sounds/pomoc.mp3"
+audio_file_pomoc = "Sounds/pomoc.mp3"
+audio_file_terapija = "Sounds/terapija.mp3"
 
-def func():
+def play_pomoc():
 
     end_time = time.time() + time_to_play
 
     # Pustite zvuk i dodajte pauzu između repeticija
     while time.time() < end_time:
         
-        play_audio_with_no_limits(audio_file)
+        play_audio_with_no_limits(audio_file_pomoc)
         time.sleep(pause)
 
+def play_terapija():
+    end_time = time.time() + time_to_play
+
+    # Pustite zvuk i dodajte pauzu između repeticija
+    while time.time() < end_time:
+        
+        play_audio_with_no_limits(audio_file_terapija)
+        time.sleep(pause)
 
 
 def on_connect(client, userdata, flags, rc):
@@ -92,7 +101,9 @@ def on_message(client, userdata, msg):
     value = poruka["value"]
 
     if value == "pomoc":
-        func()
+        play_pomoc()
+    elif value == "terapija":
+        play_terapija()
     else:
         print("Unknown command received from the controller")
 

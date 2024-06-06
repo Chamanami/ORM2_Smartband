@@ -47,7 +47,7 @@ def setup_mqtt_connection(broker_adress,broker_port):
     client.connect(broker_adress,broker_port)
     return client
 
-def simulate_temperature(normal_range=(35,38), spike_range=(39,42), spike_probability = 0.5, interval = 1):
+def simulate_temperature(normal_range=(35,38), spike_range=(39,42), spike_probability = 0.05, interval = 1):
 
     while True:
         if random.random() < spike_probability:
